@@ -1,14 +1,36 @@
 <head>
-  <title>Home Work</title>
+  <title>Django Website Demo</title>
+  
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script>
   
       $(function(){
+		//1.get webapi data and insert into db
         $('#getData').on('click',function(){
-          getData();
+			//e.preventDefault();
+			getData();  // Get data from webapi
         });
+		
+		//2.post
+		$('#AddUser').on('click', function(e){
+			//e.preventDefault();
+			addUser();  // Insert a new user
+		});
+		
+		//3.1 toggle PrintUser button
+		togglePrintUser();
+		$('#userData').hide();
+		
+		//3.2 print all users with catchPhrase
+		$('#PrintUser').on('click',function(){
+			getUsers();
+			$('#userData').show();
+		});
+		
       });
 
+	  //Get WebApi Data and insert DB
       function getData() {
 		  url='https://jsonplaceholder.typicode.com/users';
 
@@ -17,23 +39,19 @@
 			dataType: 'json',
 			success: function (data) {
 				insertData(data);
-				//alert('success');
 			},
 			error: function(msg){
-				//alert('failed');
 			}
 		  });
       }
 	  
+	  //insert DB
 	  function insertData(data){
 		  url='/addData/';
-
-		  //var csrftoken = data;
 
           $.ajax({
             url: url,
             method: "post",
-			//type: 'post',
             data: {"data": JSON.stringify(data)},
 			contentType : 'application/json',
 			dataType: 'json',
@@ -49,6 +67,91 @@
           });
 	  }
 	  
+	  //add a single user
+	  function addUser(){
+		url='/post/';
+		var data = {userName : $('#UserName').val(), catchPhrase : $('#Company_CatchPhrase').val()};
+		$.ajax({
+			url: url,
+			method: "post",
+			data: data,
+			success: function(data){
+			  alert('Success');
+		   },
+		   failure: function() {
+			  alert('Failed');
+		   }
+	   });
+	  }
+	  
+	  //check users count and toggle button
+	  function togglePrintUser(){
+		url='/checkUsers/';
+
+		$.ajax({
+			url: url,
+			method: "post",
+			async: true,
+			//data: {"data": JSON.stringify(data)},
+			contentType : 'application/json',
+			dataType: 'json',
+			success: function (index,value) {
+				//alert('ajax success');
+			},
+			error: function(resp){
+				//alert('ajax failed');
+			},
+			complete: function(resp){
+				if (resp.status == 200){
+					//$('#PrintUser').show();
+					respN = resp.responseText.replace(/'/g, '"');;
+					var obj = jQuery.parseJSON(respN);
+				} else {
+					//$('#PrintUser').hide();
+				}
+				//alert('success');
+			}
+		});
+	  }
+	  
+	  //get users count and toggle button
+	  function getUsers(){
+		url='/getUsers/';
+
+		$.ajax({
+			url: url,
+			method: "post",
+			async: true,
+			//data: {"data": JSON.stringify(data)},
+			contentType : 'application/json',
+			dataType: 'json',
+			success: function (index,value) {
+				//alert('ajax success');
+			},
+			error: function(resp){
+				//alert('ajax failed');
+			},
+			complete: function(resp){
+				if (resp.status == 200){
+					$('#PrintUser').show();
+					respN = resp.responseText.replace(/'/g, '"');;
+					var obj = jQuery.parseJSON(respN);
+					var _html = '<tr>';
+					var i=1;
+					for (var o in obj){
+						_html += '<td>' + i.toString() + '</td><td>' + obj[i-1] + '</td></tr>';
+						i++;
+					}
+					
+					$('#tbUserData').html(_html);
+				} else {
+					$('#PrintUser').hide();
+				}
+				alert('success');
+			}
+		});
+	  }
+	  
 	  $(document).ajaxSend(function(event, xhr, settings) {
 			function getCookie(name) {
 				var cookieValue = null;
@@ -56,7 +159,6 @@
 					var cookies = document.cookie.split(';');
 					for (var i = 0; i < cookies.length; i++) {
 						var cookie = jQuery.trim(cookies[i]);
-						// Does this cookie string begin with the name we want?
 						if (cookie.substring(0, name.length + 1) == (name + '=')) {
 							cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
 							break;
@@ -66,15 +168,12 @@
 				return cookieValue;
 			}
 			function sameOrigin(url) {
-				// url could be relative or scheme relative or absolute
 				var host = document.location.host; // host + port
 				var protocol = document.location.protocol;
 				var sr_origin = '//' + host;
 				var origin = protocol + sr_origin;
-				// Allow absolute or scheme relative URLs to same origin
 				return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
 					(url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
-					// or any other URL that isn't scheme relative or absolute i.e relative.
 					!(/^(\/\/|http:|https:).*/.test(url));
 			}
 			function safeMethod(method) {
@@ -87,17 +186,35 @@
 		});
   </script>
 </head>
-<body><div class='container'>  
-    <h1>Home Work</h1>  
-    <button id='getData' type="button">Get and save users</button>  
-    <br/>
-    <hr>
-    <form method="post">    
-      <input type="text">    
-      <button type="submit">Add a user</button>  
-    </form>
-    <hr>
-    <button type="button">Print users</button>  
-    <br/>
-  </div>
+<body>
+	<div class='container'>  
+		<h1>Django/Python Call Webapi</h1> 
+		<br/>		
+		<button id='getData' type="button">Get and save users</button>  
+		<br/>
+		<hr>
+		<form method="post">
+			{% csrf_token %}		
+			User Name:<input type="text" id="UserName">   
+			Catch Phrase:<input type="text" id="Company_CatchPhrase"> 		  
+			<button type="submit" id="AddUser">Add a user</button>  
+		</form>
+		<hr>
+		<button type="button" id="PrintUser">Print users</button>  
+		<div id="userData">
+			<table id='tblUserData' class="table">
+				<thead>
+					<tr scope="row">
+						<td>id</td>
+						<td>catchPhrase</td>
+					</tr>
+				</thead>
+				<tbody id='tbUserData'>
+				</tbody>
+			</table>
+		</div>
+		<br/>
+		
+	</div>
+
 </body>
